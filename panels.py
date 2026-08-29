@@ -158,6 +158,9 @@ async def webflow_connect_panel(ctx, **kwargs) -> object:
         ui.Text(f"Sites -- {first.get('title', '')}", variant="subtitle"),
         _sites_section(sites),
         ui.Divider(),
+        ui.Button("View pages", variant="primary", size="sm", full_width=True,
+                  icon="FileText", on_click=ui.Call("__panel__webflow_center")),
+        ui.Divider(),
         _settings_button(),
     ])
 
@@ -206,15 +209,99 @@ async def webflow_connect_help(ctx, **kwargs) -> object:
     )
 
 
+def _page_row(p) -> dict:
+    return {
+        "title": p.title or p.slug or p.id, "slug": p.slug or "—",
+        "status": "Draft" if p.is_draft else ("Archived" if p.is_archived else "Live"),
+        "last_updated": (p.last_updated or "")[:10] or "—",
+        "page_id": p.id,
+    }
+
+
 @ext.panel("webflow_center", slot="center", title="Webflow", icon="🌊", center_overlay=True)
-async def webflow_center_panel(ctx, **kwargs) -> object:
-    """Base center panel -- per UI_INTERFACE_STANDARD.md (2026-08-20).
-    This app has no list/detail content of its own to show in the center
-    by default (everything lives in the sidebar). MUST carry
-    center_overlay=True: per docs.imperal.io/en/concepts/panels, a plain
-    slot="center" panel is registered but the Panel app never fetches it
-    at session-init without that flag."""
-    return ui.Empty(
-        message="Nothing to show here -- this app is managed entirely from the sidebar.",
-        icon="👈",
-    )
+async def webflow_center_panel(ctx, page_id: str = "", **kwargs) -> object:
+    """Post-connect main screen: the connected site's pages, or a page
+    detail when `page_id` is passed (master-detail via the same panel_id,
+    per UI_COMPONENT_VOCABULARY.md §3)."""
+    connections = await h._load_connections(ctx)
+    if not connections:
+        return ui.Empty(
+            message="Connect a Webflow site from the sidebar to see its pages here.",
+            icon="🌊",
+        )
+    if page_id:
+        return await _page_detail(ctx, page_id, connections[0].get("id", ""))
+    return await _pages_dashboard(ctx, connections[0])
+
+
+async def _pages_dashboard(ctx, conn: dict) -> ui.UINode:
+    sites: list = []
+    try:
+        result = await h.list_sites(ctx, h.ListSitesParams(connection_id=conn.get("id", "")))
+        if result.ok:
+            sites = result.data.items
+    except Exception:
+        sites = []
+    if not sites:
+        return ui.Empty(message="No sites found on this connection.", icon="🌊")
+
+    site = sites[0]
+    pages: list = []
+    try:
+        result = await h.list_pages(ctx, h.ListPagesParams(connection_id=conn.get("id", ""), site_id=site.id))
+        if result.ok:
+            pages = result.data.items
+    except Exception:
+        pages = []
+
+    body: list[ui.UINode] = [
+        ui.Stats(children=[
+            ui.Stat(label="Total pages", value=str(len(pages))),
+            ui.Stat(label="Drafts", value=str(sum(1 for p in pages if p.is_draft))),
+        ]),
+        ui.Divider(),
+        ui.Stack(direction="h", gap=2, align="center", children=[
+            ui.Text(f"Pages — {site.display_name or site.short_name}", variant="subtitle"),
+            ui.Button("Publish site", variant="primary", size="sm", icon="Upload",
+                      on_click=ui.Call("publish_site", connection_id=conn.get("id", ""), site_id=site.id)),
+        ]),
+    ]
+    if pages:
+        columns = [
+            ui.DataColumn("title", "Title", sortable=True),
+            ui.DataColumn("slug", "Slug", sortable=False),
+            ui.DataColumn("status", "Status", sortable=True),
+            ui.DataColumn("last_updated", "Last updated", sortable=True),
+        ]
+        body.append(ui.DataTable(
+            columns=columns,
+            rows=[_page_row(p) for p in pages],
+            on_row_click=ui.Call("__panel__webflow_center", page_id=""),
+        ))
+    else:
+        body.append(ui.Text("No pages found on this site.", variant="caption"))
+    return ui.Stack(direction="v", gap=4, align="stretch", children=body)
+
+
+async def _page_detail(ctx, page_id: str, connection_id: str) -> ui.UINode:
+    result = await h.get_page(ctx, h.GetPageParams(connection_id=connection_id, page_id=page_id))
+    if not result.ok or not result.data:
+        return ui.Stack(direction="v", gap=3, align="stretch", children=[
+            ui.Button("← Back to pages", variant="ghost", size="sm",
+                      on_click=ui.Call("__panel__webflow_center")),
+            ui.Alert(title="Could not load this page", message=result.error or "Unknown error.", type="error"),
+        ])
+    p = result.data
+    return ui.Stack(direction="v", gap=3, align="stretch", children=[
+        ui.Button("← Back to pages", variant="ghost", size="sm",
+                  on_click=ui.Call("__panel__webflow_center")),
+        ui.Header(text=p.title or p.slug, level=3,
+                  subtitle="Draft" if p.is_draft else ("Archived" if p.is_archived else "Live")),
+        ui.KeyValue(columns=2, items=[
+            {"key": "Slug", "value": p.slug or "—"},
+            {"key": "SEO title", "value": p.seo_title or "—"},
+            {"key": "SEO description", "value": p.seo_description or "—"},
+            {"key": "Last updated", "value": (p.last_updated or "")[:10] or "—"},
+            {"key": "Last published", "value": (p.last_published or "")[:10] or "—"},
+        ]),
+    ])
