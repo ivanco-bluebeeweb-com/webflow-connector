@@ -42,7 +42,7 @@ async def list_forms(ctx, params: ListFormsParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     raw = await wfc.list_forms(ctx, conn["token"], params.site_id)
-    return ActionResult.ok(WebflowFormList(items=[_to_form(f) for f in raw]))
+    return ActionResult.success(WebflowFormList(items=[_to_form(f) for f in raw])), summary="Forms listed."
 
 
 @chat.function(
@@ -56,7 +56,7 @@ async def get_form(ctx, params: GetFormParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     f = await wfc.get_form(ctx, conn["token"], params.form_id)
-    return ActionResult.ok(_to_form(f))
+    return ActionResult.success(_to_form(f)), summary="Form retrieved."
 
 
 @chat.function(
@@ -71,7 +71,7 @@ async def list_form_submissions(ctx, params: ListFormSubmissionsParams) -> Actio
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     body = await wfc.list_form_submissions(ctx, conn["token"], params.form_id, params.limit, params.offset)
     items = body.get("formSubmissions", []) if isinstance(body, dict) else []
-    return ActionResult.ok(WebflowFormSubmissionList(items=[_to_submission(s) for s in items]))
+    return ActionResult.success(WebflowFormSubmissionList(items=[_to_submission(s) for s in items])), summary="Form submissions listed."
 
 
 @chat.function(
@@ -85,7 +85,7 @@ async def get_form_submission(ctx, params: GetFormSubmissionParams) -> ActionRes
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     s = await wfc.get_form_submission(ctx, conn["token"], params.submission_id)
-    return ActionResult.ok(_to_submission(s))
+    return ActionResult.success(_to_submission(s)), summary="Form submission retrieved."
 
 
 @chat.function(
@@ -100,4 +100,4 @@ async def delete_form_submission(ctx, params: DeleteFormSubmissionParams) -> Act
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     await wfc.delete_form_submission(ctx, conn["token"], params.submission_id)
-    return ActionResult.ok(DeleteResult(id=params.submission_id), message="Submission deleted.")
+    return ActionResult.success(DeleteResult(id=params.submission_id), message="Submission deleted."), summary="Form submission deleted."

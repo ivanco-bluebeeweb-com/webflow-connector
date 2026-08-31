@@ -90,10 +90,10 @@ async def connect_webflow(ctx, params: ConnectWebflowParams) -> ActionResult:
         "title": label, "detail": site_data.get("id", ""),
     })
     await _save_connections(ctx, connections)
-    return ActionResult.ok(
+    return ActionResult.success(
         ProviderConnection(id=conn_id, title=label, detail=site_data.get("id", ""), kind="site"),
         message=f"Connected Webflow site '{label}'.",
-    )
+    ), summary="Webflow connected."
 
 
 @chat.function(
@@ -117,10 +117,10 @@ async def connect_webflow_workspace(ctx, params: ConnectWebflowWorkspaceParams) 
         "title": label, "detail": f"{len(check.get('sites', []))} sites",
     })
     await _save_connections(ctx, connections)
-    return ActionResult.ok(
+    return ActionResult.success(
         ProviderConnection(id=conn_id, title=label, detail=f"{len(check.get('sites', []))} sites", kind="workspace"),
         message=f"Connected Webflow workspace '{label}'.",
-    )
+    ), summary="Webflow workspace connected."
 
 
 @chat.function(
@@ -132,7 +132,7 @@ async def connect_webflow_workspace(ctx, params: ConnectWebflowWorkspaceParams) 
 async def list_connections(ctx, params: NoParams) -> ActionResult:
     connections = await _load_connections(ctx)
     items = [ProviderConnection(id=c.get("id", ""), title=c.get("title", ""), detail=c.get("detail", ""), kind=c.get("kind", "site")) for c in connections]
-    return ActionResult.ok(ProviderConnectionList(title="Webflow connections", items=items))
+    return ActionResult.success(ProviderConnectionList(title="Webflow connections", items=items)), summary="Connections listed."
 
 
 @chat.function(
@@ -148,7 +148,7 @@ async def disconnect_webflow(ctx, params: DisconnectWebflowParams) -> ActionResu
     if len(remaining) == len(connections):
         return ActionResult.error("Connection not found.", code="WEBFLOW_NOT_FOUND")
     await _save_connections(ctx, remaining)
-    return ActionResult.ok(DeleteResult(id=params.connection_id, title="Disconnected", ok=True), message="Webflow connection disconnected.")
+    return ActionResult.success(DeleteResult(id=params.connection_id, title="Disconnected", ok=True), message="Webflow connection disconnected."), summary="Webflow disconnected."
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -177,7 +177,7 @@ async def list_sites(ctx, params: ListSitesParams) -> ActionResult:
         )
         for s in raw_sites
     ]
-    return ActionResult.ok(WebflowSiteList(title="Webflow sites", items=items))
+    return ActionResult.success(WebflowSiteList(title="Webflow sites", items=items)), summary="Sites listed."
 
 
 @chat.function(
@@ -191,13 +191,13 @@ async def get_site(ctx, params: GetSiteParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     s = await wc.get_site(ctx, conn["token"], params.site_id)
-    return ActionResult.ok(WebflowSite(
+    return ActionResult.success(WebflowSite(
         id=s.get("id", ""), display_name=s.get("displayName", ""), short_name=s.get("shortName", ""),
         workspace_id=s.get("workspaceId", ""),
         custom_domains=[d.get("url", "") for d in s.get("customDomains", [])] if isinstance(s.get("customDomains"), list) else [],
         last_published=s.get("lastPublished", ""), created_on=s.get("createdOn", ""), preview_url=s.get("previewUrl", ""),
         time_zone=s.get("timeZone", ""), parent_folder_id=s.get("parentFolderId", ""),
-    ))
+    )), summary="Site retrieved."
 
 
 @chat.function(
@@ -213,10 +213,10 @@ async def publish_site(ctx, params: PublishSiteParams) -> ActionResult:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     domains = params.custom_domains or None
     await wc.publish_site(ctx, conn["token"], params.site_id, domains)
-    return ActionResult.ok(
+    return ActionResult.success(
         PublishSiteResult(site_id=params.site_id, queued=True, domains=params.custom_domains),
         message="Site publish requested.",
-    )
+    ), summary="Site publish requested."
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -246,7 +246,7 @@ async def list_pages(ctx, params: ListPagesParams) -> ActionResult:
         )
         for p in raw_pages
     ]
-    return ActionResult.ok(WebflowPageList(title="Pages", items=items))
+    return ActionResult.success(WebflowPageList(title="Pages", items=items)), summary="Pages listed."
 
 
 @chat.function(
@@ -260,14 +260,14 @@ async def get_page(ctx, params: GetPageParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     p = await wc.get_page_metadata(ctx, conn["token"], params.page_id)
-    return ActionResult.ok(WebflowPage(
+    return ActionResult.success(WebflowPage(
         id=p.get("id", ""), site_id=p.get("siteId", ""), title=p.get("title", ""), slug=p.get("slug", ""),
         parent_id=p.get("parentId", "") or "", collection_id=p.get("collectionId", "") or "",
         created_on=p.get("createdOn", ""), last_updated=p.get("lastUpdated", ""),
         archived=bool(p.get("archived", False)), draft=bool(p.get("draft", False)),
         can_branch=bool(p.get("canBranch", False)), seo_title=(p.get("seo") or {}).get("title", ""),
         seo_description=(p.get("seo") or {}).get("description", ""),
-    ))
+    )), summary="Page retrieved."
 
 
 @chat.function(
@@ -296,14 +296,14 @@ async def update_page_metadata(ctx, params: UpdatePageMetaParams) -> ActionResul
     if params.og_image_url:
         payload["openGraphImage"] = params.og_image_url
     p = await wc.update_page_metadata(ctx, conn["token"], params.page_id, payload)
-    return ActionResult.ok(WebflowPage(
+    return ActionResult.success(WebflowPage(
         id=p.get("id", ""), site_id=p.get("siteId", ""), title=p.get("title", ""), slug=p.get("slug", ""),
         parent_id=p.get("parentId", "") or "", collection_id=p.get("collectionId", "") or "",
         created_on=p.get("createdOn", ""), last_updated=p.get("lastUpdated", ""),
         archived=bool(p.get("archived", False)), draft=bool(p.get("draft", False)),
         can_branch=bool(p.get("canBranch", False)), seo_title=(p.get("seo") or {}).get("title", ""),
         seo_description=(p.get("seo") or {}).get("description", ""),
-    ), message="Page metadata updated.")
+    ), message="Page metadata updated."), summary="Page metadata updated."
 
 
 @chat.function(
@@ -324,7 +324,7 @@ async def get_page_content(ctx, params: GetPageContentParams) -> ActionResult:
         )
         for n in (body.get("nodes", []) if isinstance(body, dict) else [])
     ]
-    return ActionResult.ok(WebflowPageContent(page_id=params.page_id, nodes=nodes))
+    return ActionResult.success(WebflowPageContent(page_id=params.page_id, nodes=nodes)), summary="Page content retrieved."
 
 
 @chat.function(
@@ -347,7 +347,7 @@ async def update_page_content(ctx, params: UpdatePageContentParams) -> ActionRes
         )
         for n in (body.get("nodes", []) if isinstance(body, dict) else [])
     ]
-    return ActionResult.ok(WebflowPageContent(page_id=params.page_id, nodes=nodes), message="Page content updated.")
+    return ActionResult.success(WebflowPageContent(page_id=params.page_id, nodes=nodes), message="Page content updated."), summary="Page content updated."
 
 
 @chat.function(
@@ -362,11 +362,11 @@ async def duplicate_page(ctx, params: DuplicatePageParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     p = await wc.duplicate_page(ctx, conn["token"], params.page_id, params.title, params.slug)
-    return ActionResult.ok(WebflowPage(
+    return ActionResult.success(WebflowPage(
         id=p.get("id", ""), site_id=p.get("siteId", ""), title=p.get("title", ""), slug=p.get("slug", ""),
         parent_id=p.get("parentId", "") or "", collection_id=p.get("collectionId", "") or "",
         created_on=p.get("createdOn", ""), last_updated=p.get("lastUpdated", ""),
         archived=bool(p.get("archived", False)), draft=bool(p.get("draft", False)),
         can_branch=bool(p.get("canBranch", False)), seo_title=(p.get("seo") or {}).get("title", ""),
         seo_description=(p.get("seo") or {}).get("description", ""),
-    ), message="Page duplicated.")
+    ), message="Page duplicated."), summary="Duplicate page done."

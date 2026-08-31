@@ -68,7 +68,7 @@ async def list_products(ctx, params: ListProductsParams) -> ActionResult:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     body = await wec.list_products(ctx, conn["token"], params.site_id, params.limit, params.offset)
     items = body.get("items", []) if isinstance(body, dict) else []
-    return ActionResult.ok(WebflowProductList(items=[_to_product(p) for p in items]))
+    return ActionResult.success(WebflowProductList(items=[_to_product(p) for p in items])), summary="Products listed."
 
 
 @chat.function(
@@ -82,7 +82,7 @@ async def get_product(ctx, params: GetProductParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     p = await wec.get_product(ctx, conn["token"], params.product_id)
-    return ActionResult.ok(_to_product(p))
+    return ActionResult.success(_to_product(p)), summary="Product retrieved."
 
 
 @chat.function(
@@ -100,7 +100,7 @@ async def create_product(ctx, params: CreateProductParams) -> ActionResult:
         ctx, conn["token"], params.site_id, params.name, params.description,
         params.price_amount, params.price_currency, params.sku_name, params.is_visible,
     )
-    return ActionResult.ok(_to_product(p))
+    return ActionResult.success(_to_product(p)), summary="Product created."
 
 
 @chat.function(
@@ -118,7 +118,7 @@ async def update_product(ctx, params: UpdateProductParams) -> ActionResult:
     existing = await wec.get_product(ctx, conn["token"], params.product_id)
     site_id = existing.get("product", existing).get("siteId", "")
     p = await wec.update_product(ctx, conn["token"], site_id, params.product_id, params.name, params.description, params.is_visible)
-    return ActionResult.ok(_to_product(p))
+    return ActionResult.success(_to_product(p)), summary="Product updated."
 
 
 @chat.function(
@@ -135,7 +135,7 @@ async def update_sku(ctx, params: UpdateSkuParams) -> ActionResult:
     existing = await wec.get_product(ctx, conn["token"], params.product_id)
     site_id = existing.get("product", existing).get("siteId", "")
     p = await wec.update_sku(ctx, conn["token"], site_id, params.product_id, params.sku_id, params.price_amount, params.sku_values)
-    return ActionResult.ok(_to_product(p))
+    return ActionResult.success(_to_product(p)), summary="Sku updated."
 
 
 @chat.function(
@@ -152,7 +152,7 @@ async def delete_product(ctx, params: DeleteProductParams) -> ActionResult:
     existing = await wec.get_product(ctx, conn["token"], params.product_id)
     site_id = existing.get("product", existing).get("siteId", "")
     await wec.delete_product(ctx, conn["token"], site_id, params.product_id)
-    return ActionResult.ok(DeleteResult(id=params.product_id, deleted=True))
+    return ActionResult.success(DeleteResult(id=params.product_id, deleted=True)), summary="Product deleted."
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -171,10 +171,10 @@ async def get_inventory(ctx, params: GetInventoryParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     body = await wec.get_inventory(ctx, conn["token"], params.site_id, params.sku_id)
-    return ActionResult.ok(WebflowInventory(
+    return ActionResult.success(WebflowInventory(
         sku_id=params.sku_id, quantity=int(body.get("quantity", 0) or 0),
         inventory_type=body.get("inventoryType", ""),
-    ))
+    )), summary="Inventory retrieved."
 
 
 @chat.function(
@@ -189,7 +189,7 @@ async def update_inventory(ctx, params: UpdateInventoryParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     await wec.update_inventory(ctx, conn["token"], params.site_id, params.sku_id, params.quantity, params.inventory_type)
-    return ActionResult.ok(WebflowInventory(sku_id=params.sku_id, quantity=params.quantity, inventory_type=params.inventory_type))
+    return ActionResult.success(WebflowInventory(sku_id=params.sku_id, quantity=params.quantity, inventory_type=params.inventory_type)), summary="Inventory updated."
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -209,7 +209,7 @@ async def list_orders(ctx, params: ListOrdersParams) -> ActionResult:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     body = await wec.list_orders(ctx, conn["token"], params.site_id, params.status, params.limit, params.offset)
     items = body.get("orders", []) if isinstance(body, dict) else []
-    return ActionResult.ok(WebflowOrderList(items=[_to_order(o) for o in items]))
+    return ActionResult.success(WebflowOrderList(items=[_to_order(o) for o in items])), summary="Orders listed."
 
 
 @chat.function(
@@ -225,7 +225,7 @@ async def get_order(ctx, params: GetOrderParams) -> ActionResult:
     conns_site = await _resolve_connection(ctx, params.connection_id)
     site_id = conns_site.get("site_id", "") if isinstance(conns_site, dict) else ""
     o = await wec.get_order(ctx, conn["token"], site_id, params.order_id)
-    return ActionResult.ok(_to_order(o))
+    return ActionResult.success(_to_order(o)), summary="Order retrieved."
 
 
 @chat.function(
@@ -241,7 +241,7 @@ async def update_order(ctx, params: UpdateOrderParams) -> ActionResult:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     site_id = conn.get("site_id", "")
     o = await wec.update_order(ctx, conn["token"], site_id, params.order_id, params.shipping_provider, params.shipping_tracking, params.shipping_tracking_url)
-    return ActionResult.ok(_to_order(o))
+    return ActionResult.success(_to_order(o)), summary="Order updated."
 
 
 @chat.function(
@@ -257,7 +257,7 @@ async def fulfill_order(ctx, params: FulfillOrderParams) -> ActionResult:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     site_id = conn.get("site_id", "")
     await wec.fulfill_order(ctx, conn["token"], site_id, params.order_id, params.send_customer_notification)
-    return ActionResult.ok(OrderActionResult(order_id=params.order_id, status="fulfilled", title="Order marked fulfilled"))
+    return ActionResult.success(OrderActionResult(order_id=params.order_id, status="fulfilled", title="Order marked fulfilled")), summary="Fulfill order done."
 
 
 @chat.function(
@@ -273,7 +273,7 @@ async def unfulfill_order(ctx, params: UnfulfillOrderParams) -> ActionResult:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     site_id = conn.get("site_id", "")
     await wec.unfulfill_order(ctx, conn["token"], site_id, params.order_id)
-    return ActionResult.ok(OrderActionResult(order_id=params.order_id, status="unfulfilled", title="Order marked unfulfilled"))
+    return ActionResult.success(OrderActionResult(order_id=params.order_id, status="unfulfilled", title="Order marked unfulfilled")), summary="Unfulfill order done."
 
 
 @chat.function(
@@ -289,4 +289,4 @@ async def refund_order(ctx, params: RefundOrderParams) -> ActionResult:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     site_id = conn.get("site_id", "")
     await wec.refund_order(ctx, conn["token"], site_id, params.order_id)
-    return ActionResult.ok(OrderActionResult(order_id=params.order_id, status="refunded", title="Order refunded"))
+    return ActionResult.success(OrderActionResult(order_id=params.order_id, status="refunded", title="Order refunded")), summary="Refund order done."

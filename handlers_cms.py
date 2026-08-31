@@ -46,7 +46,7 @@ async def list_collections(ctx, params: ListCollectionsParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     raw = await wcc.list_collections(ctx, conn["token"], params.site_id)
-    return ActionResult.ok(WebflowCollectionList(items=[_to_collection(c) for c in raw]))
+    return ActionResult.success(WebflowCollectionList(items=[_to_collection(c) for c in raw])), summary="Collections listed."
 
 
 @chat.function(
@@ -68,11 +68,11 @@ async def get_collection(ctx, params: GetCollectionParams) -> ActionResult:
         )
         for f in c.get("fields", [])
     ]
-    return ActionResult.ok(WebflowCollectionDetail(
+    return ActionResult.success(WebflowCollectionDetail(
         id=c.get("id", ""), display_name=c.get("displayName", ""), singular_name=c.get("singularName", ""),
         slug=c.get("slug", ""), created_on=c.get("createdOn", ""), last_updated=c.get("lastUpdated", ""),
         fields=fields,
-    ))
+    )), summary="Collection retrieved."
 
 
 @chat.function(
@@ -87,7 +87,7 @@ async def create_collection(ctx, params: CreateCollectionParams) -> ActionResult
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     c = await wcc.create_collection(ctx, conn["token"], params.site_id, params.display_name, params.singular_name, params.slug)
-    return ActionResult.ok(_to_collection(c), message=f"Collection '{params.display_name}' created.")
+    return ActionResult.success(_to_collection(c), message=f"Collection '{params.display_name}' created."), summary="Collection created."
 
 
 @chat.function(
@@ -102,7 +102,7 @@ async def delete_collection(ctx, params: DeleteCollectionParams) -> ActionResult
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     await wcc.delete_collection(ctx, conn["token"], params.collection_id)
-    return ActionResult.ok(DeleteResult(id=params.collection_id), message="Collection deleted.")
+    return ActionResult.success(DeleteResult(id=params.collection_id), message="Collection deleted."), summary="Collection deleted."
 
 
 @chat.function(
@@ -117,7 +117,7 @@ async def list_collection_items(ctx, params: ListCollectionItemsParams) -> Actio
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     body = await wcc.list_items(ctx, conn["token"], params.collection_id, params.limit, params.offset)
     items = body.get("items", []) if isinstance(body, dict) else []
-    return ActionResult.ok(WebflowCollectionItemList(items=[_to_item(i) for i in items]))
+    return ActionResult.success(WebflowCollectionItemList(items=[_to_item(i) for i in items])), summary="Collection items listed."
 
 
 @chat.function(
@@ -131,7 +131,7 @@ async def get_collection_item(ctx, params: GetCollectionItemParams) -> ActionRes
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     i = await wcc.get_item(ctx, conn["token"], params.collection_id, params.item_id)
-    return ActionResult.ok(_to_item(i))
+    return ActionResult.success(_to_item(i)), summary="Collection item retrieved."
 
 
 @chat.function(
@@ -147,7 +147,7 @@ async def create_collection_item(ctx, params: CreateCollectionItemParams) -> Act
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     i = await wcc.create_item(ctx, conn["token"], params.collection_id, params.field_data, params.is_draft)
     msg = "Item created as a draft -- call publish_collection_items to make it live." if params.is_draft else "Item created and published live."
-    return ActionResult.ok(_to_item(i), message=msg)
+    return ActionResult.success(_to_item(i), message=msg), summary="Collection item created."
 
 
 @chat.function(
@@ -162,7 +162,7 @@ async def update_collection_item(ctx, params: UpdateCollectionItemParams) -> Act
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     i = await wcc.update_item(ctx, conn["token"], params.collection_id, params.item_id, params.field_data, params.is_draft)
-    return ActionResult.ok(_to_item(i), message="Item updated.")
+    return ActionResult.success(_to_item(i), message="Item updated."), summary="Collection item updated."
 
 
 @chat.function(
@@ -177,7 +177,7 @@ async def delete_collection_item(ctx, params: DeleteCollectionItemParams) -> Act
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     await wcc.delete_item(ctx, conn["token"], params.collection_id, params.item_id)
-    return ActionResult.ok(DeleteResult(id=params.item_id), message="Item deleted.")
+    return ActionResult.success(DeleteResult(id=params.item_id), message="Item deleted."), summary="Collection item deleted."
 
 
 @chat.function(
@@ -192,7 +192,7 @@ async def publish_collection_items(ctx, params: PublishCollectionItemsParams) ->
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     await wcc.publish_items(ctx, conn["token"], params.collection_id, params.item_ids)
-    return ActionResult.ok(
+    return ActionResult.success(
         PublishItemsResult(collection_id=params.collection_id, published_item_ids=params.item_ids),
         message=f"{len(params.item_ids)} item(s) published live.",
-    )
+    ), summary="Collection items publish requested."
