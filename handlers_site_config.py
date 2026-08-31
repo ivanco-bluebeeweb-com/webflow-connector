@@ -27,7 +27,7 @@ async def list_components(ctx, params: ListComponentsParams) -> ActionResult:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     raw = await wsc.list_components(ctx, conn["token"], params.site_id)
     items = [WebflowComponent(id=c.get("id", ""), name=c.get("name", ""), group=c.get("group", "") or "") for c in raw]
-    return ActionResult.success(WebflowComponentList(items=items)), summary="Components listed."
+    return ActionResult.success(WebflowComponentList(items=items), summary="Components listed.")
 
 
 @chat.function(
@@ -41,7 +41,7 @@ async def get_component_content(ctx, params: GetComponentContentParams) -> Actio
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     body = await wsc.get_component_content(ctx, conn["token"], params.site_id, params.component_id, params.locale_id)
-    return ActionResult.success(WebflowComponentContent(component_id=params.component_id, nodes=body.get("nodes", []) if isinstance(body, dict) else [])), summary="Component content retrieved."
+    return ActionResult.success(WebflowComponentContent(component_id=params.component_id, nodes=body.get("nodes", []) if isinstance(body, dict) else []), summary="Component content retrieved.")
 
 
 @chat.function(
@@ -56,7 +56,7 @@ async def list_redirects(ctx, params: ListRedirectsParams) -> ActionResult:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     raw = await wsc.list_redirects(ctx, conn["token"], params.site_id)
     items = [WebflowRedirect(id=r.get("id", ""), from_url=r.get("fromUrl", ""), to_url=r.get("toUrl", "")) for r in raw]
-    return ActionResult.success(WebflowRedirectList(items=items)), summary="Redirects listed."
+    return ActionResult.success(WebflowRedirectList(items=items), summary="Redirects listed.")
 
 
 @chat.function(
@@ -71,7 +71,7 @@ async def create_redirect(ctx, params: CreateRedirectParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     r = await wsc.create_redirect(ctx, conn["token"], params.site_id, params.from_url, params.to_url)
-    return ActionResult.success(WebflowRedirect(id=r.get("id", ""), from_url=r.get("fromUrl", params.from_url), to_url=r.get("toUrl", params.to_url)), message="Redirect created."), summary="Redirect created."
+    return ActionResult.success(WebflowRedirect(id=r.get("id", ""), from_url=r.get("fromUrl", params.from_url), to_url=r.get("toUrl", params.to_url)), message="Redirect created.", summary="Redirect created.")
 
 
 @chat.function(
@@ -86,4 +86,4 @@ async def delete_redirect(ctx, params: DeleteRedirectParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     await wsc.delete_redirect(ctx, conn["token"], params.site_id, params.redirect_id)
-    return ActionResult.success(DeleteResult(id=params.redirect_id), message="Redirect deleted."), summary="Redirect deleted."
+    return ActionResult.success(DeleteResult(id=params.redirect_id), message="Redirect deleted.", summary="Redirect deleted.")

@@ -34,7 +34,7 @@ async def list_assets(ctx, params: ListAssetsParams) -> ActionResult:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     body = await wac.list_assets(ctx, conn["token"], params.site_id, params.limit, params.offset)
     items = body.get("assets", []) if isinstance(body, dict) else []
-    return ActionResult.success(WebflowAssetList(items=[_to_asset(a) for a in items])), summary="Assets listed."
+    return ActionResult.success(WebflowAssetList(items=[_to_asset(a) for a in items]), summary="Assets listed.")
 
 
 @chat.function(
@@ -48,7 +48,7 @@ async def get_asset(ctx, params: GetAssetParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     a = await wac.get_asset(ctx, conn["token"], params.asset_id)
-    return ActionResult.success(_to_asset(a)), summary="Asset retrieved."
+    return ActionResult.success(_to_asset(a), summary="Asset retrieved.")
 
 
 @chat.function(
@@ -63,7 +63,7 @@ async def upload_asset_from_url(ctx, params: UploadAssetFromUrlParams) -> Action
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     a = await wac.upload_asset_from_url(ctx, conn["token"], params.site_id, params.source_url, params.file_name)
-    return ActionResult.success(_to_asset(a), message="Asset uploaded to the media library."), summary="Upload asset from url done."
+    return ActionResult.success(_to_asset(a), message="Asset uploaded to the media library.", summary="Upload asset from url done.")
 
 
 @chat.function(
@@ -78,4 +78,4 @@ async def delete_asset(ctx, params: DeleteAssetParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     await wac.delete_asset(ctx, conn["token"], params.asset_id)
-    return ActionResult.success(DeleteResult(id=params.asset_id), message="Asset deleted."), summary="Asset deleted."
+    return ActionResult.success(DeleteResult(id=params.asset_id), message="Asset deleted.", summary="Asset deleted.")

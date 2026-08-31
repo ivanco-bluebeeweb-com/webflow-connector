@@ -33,7 +33,7 @@ async def list_webhooks(ctx, params: ListWebhooksParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     raw = await wwc.list_webhooks(ctx, conn["token"], params.site_id)
-    return ActionResult.success(WebflowWebhookList(items=[_to_webhook(w) for w in raw])), summary="Webhooks listed."
+    return ActionResult.success(WebflowWebhookList(items=[_to_webhook(w) for w in raw]), summary="Webhooks listed.")
 
 
 @chat.function(
@@ -47,7 +47,7 @@ async def get_webhook(ctx, params: GetWebhookParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     w = await wwc.get_webhook(ctx, conn["token"], params.webhook_id)
-    return ActionResult.success(_to_webhook(w)), summary="Webhook retrieved."
+    return ActionResult.success(_to_webhook(w), summary="Webhook retrieved.")
 
 
 @chat.function(
@@ -64,7 +64,7 @@ async def create_webhook(ctx, params: CreateWebhookParams) -> ActionResult:
     if params.trigger_type not in WEBFLOW_TRIGGER_TYPES:
         return ActionResult.error(f"trigger_type must be one of: {', '.join(WEBFLOW_TRIGGER_TYPES)}.", code="WEBFLOW_INVALID_TRIGGER_TYPE")
     w = await wwc.create_webhook(ctx, conn["token"], params.site_id, params.trigger_type, params.url, params.filter)
-    return ActionResult.success(_to_webhook(w), message=f"Webhook created for '{params.trigger_type}'."), summary="Webhook created."
+    return ActionResult.success(_to_webhook(w), message=f"Webhook created for '{params.trigger_type}'.", summary="Webhook created.")
 
 
 @chat.function(
@@ -79,7 +79,7 @@ async def delete_webhook(ctx, params: DeleteWebhookParams) -> ActionResult:
     if not conn:
         return ActionResult.error("No Webflow site connected. Use connect_webflow first.", code="WEBFLOW_NOT_CONNECTED")
     await wwc.delete_webhook(ctx, conn["token"], params.webhook_id)
-    return ActionResult.success(DeleteResult(id=params.webhook_id), message="Webhook deleted."), summary="Webhook deleted."
+    return ActionResult.success(DeleteResult(id=params.webhook_id), message="Webhook deleted.", summary="Webhook deleted.")
 
 
 @chat.function(
@@ -101,4 +101,4 @@ async def list_comment_threads(ctx, params: ListCommentThreadsParams) -> ActionR
         )
         for t in threads
     ]
-    return ActionResult.success(WebflowCommentThreadList(items=items)), summary="Comment threads listed."
+    return ActionResult.success(WebflowCommentThreadList(items=items), summary="Comment threads listed.")
