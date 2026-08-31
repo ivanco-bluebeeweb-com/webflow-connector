@@ -48,6 +48,7 @@ class ProviderConnection(sdl.Entity):
 
 
 class ProviderConnectionList(sdl.Entity):
+    id: str = ""
     title: str = "Webflow connections"
     items: list[ProviderConnection] = []
 
@@ -72,6 +73,7 @@ class ListSitesParams(BaseModel):
 
 
 class WebflowSite(sdl.Entity):
+    title: str = ""
     id: str
     display_name: str = ""
     short_name: str = ""
@@ -86,6 +88,7 @@ class WebflowSite(sdl.Entity):
 
 
 class WebflowSiteList(sdl.Entity):
+    id: str = ""
     title: str = "Sites"
     items: list[WebflowSite] = []
 
@@ -103,6 +106,7 @@ class PublishSiteParams(BaseModel):
 
 
 class PublishSiteResult(sdl.Entity):
+    id: str = ""
     site_id: str
     queued: bool = True
     title: str = "Publish queued"
@@ -139,6 +143,7 @@ class WebflowPage(sdl.Entity):
 
 
 class WebflowPageList(sdl.Entity):
+    id: str = ""
     title: str = "Pages"
     items: list[WebflowPage] = []
 
@@ -166,6 +171,7 @@ class GetPageContentParams(BaseModel):
 
 
 class WebflowPageNode(sdl.Entity):
+    title: str = ""
     id: str
     type: str = ""
     tag: str = ""
@@ -173,6 +179,8 @@ class WebflowPageNode(sdl.Entity):
 
 
 class WebflowPageContent(sdl.Entity):
+    id: str = ""
+    title: str = ""
     page_id: str
     nodes: list[WebflowPageNode] = []
 
