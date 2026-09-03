@@ -37,8 +37,7 @@ def _settings_button() -> ui.UINode:
     """The one required secondary entry point into the settings screen --
     always the last element at the bottom of the sidebar."""
     return ui.Button(
-        "App settings", variant="secondary", size="sm", full_width=True,
-        icon="settings", on_click=ui.Call("__panel__webflow_settings"),
+        "App settings", variant="secondary", size="sm", icon="settings", on_click=ui.Call("__panel__webflow_settings"),
     )
 
 
@@ -90,6 +89,9 @@ def _connect_section() -> ui.UINode:
         ui.Button("How do I get a Site Token?", variant="ghost", size="sm",
                   icon="HelpCircle",
                   on_click=ui.Call("__panel__webflow_connect_help")),
+        ui.Button("Authorize Webflow (OAuth 2.0)", variant="primary", size="sm", icon="login"),
+        ui.Divider(),
+        ui.Text("Or connect via Site / Workspace Token", variant="caption"),
         ui.Form(
             action="connect_webflow",
             submit_label="Verify and connect",
@@ -158,8 +160,7 @@ async def webflow_connect_panel(ctx, **kwargs) -> object:
         ui.Text(f"Sites -- {first.get('title', '')}", variant="subtitle"),
         _sites_section(sites),
         ui.Divider(),
-        ui.Button("View pages", variant="primary", size="sm", full_width=True,
-                  icon="FileText", on_click=ui.Call("__panel__webflow_center")),
+        ui.Button("View pages", variant="primary", size="sm", icon="FileText", on_click=ui.Call("__panel__webflow_center")),
         ui.Divider(),
         _settings_button(),
     ])
